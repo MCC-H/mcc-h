@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Form UI Field Detection Test</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
+    h1 { font-size: 1.25rem; }
+    .drop { border: 2px dashed #666; border-radius: 8px; padding: 2rem; text-align: center; cursor: pointer; margin: 1rem 0; }
+    .drop:hover, .drop.dragover { border-color: #4a9eff; background: #f0f7ff; }
+    input[type="file"] { display: none; }
+    .preview { display: flex; flex-wrap: wrap; gap: 1rem; margin: 1rem 0; }
+    .preview-item { position: relative; margin-bottom: 1rem; }
+    .img-wrapper { width: 100%; }
+    .img-wrapper img, .img-wrapper canvas { max-width: 100%; height: auto; display: block; border: 1px solid #ccc; }
+    .preview-item .detections { font-size: 12px; margin-top: 0.5rem; max-height: 200px; overflow-y: auto; font-family: ui-monospace, monospace; }
+    .preview-item .det-item { margin: 0.25rem 0; }
+    button { padding: 0.5rem 1rem; background: #4a9eff; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
+    button:hover { background: #3a8eef; }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    #result { margin-top: 1rem; padding: 1rem; background: #f5f5f5; border-radius: 6px; white-space: pre-wrap; }
+    .err { color: #c44; }
+  </style>
+</head>
+<body>
+  <h1>Form UI Field Detection Test</h1>
+  <p>Drop, paste (Ctrl+V), or select form/screenshot images. Click "Detect fields" to send to the server.</p>
+  <div class="drop" id="drop">Drop images here or click to select</div>
+  <input type="file" id="file" accept="image/*" multiple>
+  <div class="preview" id="preview"></div>
+  <button id="btn" disabled>Detect fields</button>
+  <div id="result"></div>
+
+  <script>
+    const API = window.location.origin;
+    const drop = document.getElementById('drop');
+    const fileInput = document.getElementById('file');
+    const preview = document.getElementById('preview');
+    const btn = document.getElementById('btn');
+    const result = document.getElementById('result');
+
+    let images = [];
+
+    drop.onclick = () => fileInput.click();
+    drop.ondragover = (e) => { e.preventDefault(); drop.classList.add('dragover'); };
+    drop.ondragleave = () => drop.classList.remove('dragover');
+    drop.ondrop = (e) => {
+      e.preventDefault();
+      drop.classList.remove('dragover');
+      addFiles(e.dataTransfer.files);
+    };
+    fileInput.onchange = () => addFiles(fileInput.files);
+
+    document.addEventListener('paste', (e) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      const files = [];
+      for (const item of items) {
+        if (item.type.startsWith('image/')) {
+          const file = item.getAsFile();
+          if (file) files.push(file);
+        }
+      }
+      if (files.length) {
+        e.preventDefault();
+        addFiles(files);
+      }
+    });
+
+    function addFiles(files) {
+      for (const f of files) {
+        if (!f.type.startsWith('image/')) continue;
+        const reader = new FileReader();
+        reader.onload = () => {
+          images.push(reader.result.split(',')[1]);
+          renderPreview();
+        };
+        reader.readAsDataURL(f);
+      }
+    }
+
+    function renderPreview() {
+      preview.innerHTML = '';
+      images.forEach((b64, i) => {
+        const div = document.createElement('div');
+        div.className = 'preview-item';
+        div.dataset.imageIndex = i;
+        const wrapper = document.createElement('div');
+        wrapper.className = 'img-wrapper';
+        const img = document.createElement('img');
+        img.src = 'data:image/png;base64,' + b64;
+        wrapper.appendChild(img);
+        div.appendChild(wrapper);
+        const det = document.createElement('div');
+        det.className = 'detections';
+        det.id = 'det-' + i;
+        det.textContent = '—';
+        div.appendChild(det);
+        preview.appendChild(div);
+      });
+      btn.disabled = images.length === 0;
+    }
+
+    function drawBoxes(previewItem, detections) {
+      const img = previewItem.querySelector('img');
+      if (!img || !detections.length) return;
+      const w = img.naturalWidth || img.width;
+      const h = img.naturalHeight || img.height;
+      if (!w || !h) return;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+
+      ctx.strokeStyle = 'rgba(255, 0, 0, 0.9)';
+      ctx.lineWidth = 3;
+      ctx.font = '14px sans-serif';
+      ctx.fillStyle = 'rgba(255, 0, 0, 0.9)';
+      detections.forEach((x) => {
+        const [x1, y1, x2, y2] = x.bbox || [];
+        if (x1 == null) return;
+        ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+        ctx.fillText(x.class + ' ' + Math.round((x.confidence || 0) * 100) + '%', x1, y1 - 4);
+      });
+
+      const wrapper = previewItem.querySelector('.img-wrapper');
+      wrapper.innerHTML = '';
+      wrapper.appendChild(canvas);
+    }
+
+    btn.onclick = async () => {
+      btn.disabled = true;
+      result.textContent = 'Loading...';
+      try {
+        const res = await fetch(API + '/detect', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ images }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          result.innerHTML = '<span class="err">' + (data.error || res.status) + '</span>';
+          return;
+        }
+        data.results.forEach((r, i) => {
+          const previewItem = preview.children[i];
+          const el = document.getElementById('det-' + i);
+          if (!previewItem || !el) return;
+          if (r.error) {
+            el.textContent = 'Error: ' + r.error;
+            return;
+          }
+          const d = r.detections || [];
+          drawBoxes(previewItem, d);
+          if (!d.length) {
+            el.textContent = 'No fields detected';
+          } else {
+            el.innerHTML = d.map(x => {
+              const bbox = x.bbox ? ` bbox: [${x.bbox.map(n => Math.round(n)).join(', ')}]` : '';
+              return `<div class="det-item">${x.class} (${(x.confidence * 100).toFixed(0)}%)${bbox}</div>`;
+            }).join('');
+          }
+        });
+        const total = data.results.reduce((s, r) => s + (r.detections?.length || 0), 0);
+        result.textContent = 'Done. ' + total + ' detections across ' + data.results.length + ' image(s).';
+      } catch (e) {
+        result.innerHTML = '<span class="err">' + e.message + '</span>';
+      }
+      btn.disabled = false;
+    };
+  </script>
+</body>
+</html>

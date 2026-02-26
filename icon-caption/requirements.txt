@@ -1,0 +1,5 @@
+flask>=3.0
+torch>=2.0
+transformers>=4.46,<4.53
+pillow>=10.0
+huggingface_hub>=0.20

@@ -1,0 +1,13 @@
+name: web-form-ui-field-detection
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python>=3.10,<3.13
+  - pip
+  - pip:
+    - flask>=3.0
+    - ultralytics>=8.3.0
+    - pillow>=10.0
+    - huggingface_hub>=0.20
+    - coremltools>=9.0

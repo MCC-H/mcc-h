@@ -1,0 +1,42 @@
+/**
+ * @see https://www.electron.build/configuration/configuration
+ */
+{
+  appId: "ai.h.mcc",
+  productName: "MCC-H",
+  directories: {
+    output: "release/${version}",
+  },
+  files: ["dist", "dist-electron"],
+  asarUnpack: [
+    "**/node_modules/archiver/**",
+    "**/node_modules/archiver-utils/**",
+    "**/node_modules/zip-stream/**",
+  ],
+  extraResources: [
+    {
+      from: "houston-vm/.build/arm64-apple-macosx/release/HoustonVM",
+      to: "HoustonVM",
+    },
+    {
+      from: "dist-electron/resources/HoustonAI",
+      to: "HoustonAI",
+    },
+    {
+      from: "dist-electron/resources/llama-b8149",
+      to: "llama-b8149",
+    },
+  ],
+  mac: {
+    target: [{ target: "dmg", arch: ["arm64"] }],
+    artifactName: "${productName}-Mac-${version}-${arch}.${ext}",
+    category: "public.app-category.developer-tools",
+    icon: "../mcc-h-logo.png",
+    identity: "F44ZS9HT2P",
+    entitlements: "build/entitlements.mac.plist",
+    entitlementsInherit: "build/entitlements.mac.plist",
+    hardenedRuntime: true,
+    notarize: false,
+  },
+  afterPack: "scripts/afterPack.cjs",
+}

@@ -1,0 +1,61 @@
+{
+  "name": "MCC-H",
+  "version": "0.0.1",
+  "author": "Aleksei Borodin (ZonD80)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MCC-H/mcc-h"
+  },
+  "homepage": "https://mcc-h.ai",
+  "bugs": {
+    "url": "https://github.com/MCC-H/mcc-h/issues"
+  },
+  "keywords": [
+    "MCC-H",
+    "AI",
+    "human",
+    "virtual machine",
+    "desktop automation",
+    "AI Agent"
+  ],
+  "description": "MCC-H - Let AI work like a human",
+  "main": "dist-electron/main/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc -b && vite build",
+    "preview": "vite preview",
+    "electron:dev": "electron-vite dev",
+    "electron:build": "electron-vite build && ./scripts/copy-houston-vm.sh",
+    "electron:preview": "electron-vite preview",
+    "electron:pack": "electron-vite build && ./scripts/build-houston-vm.sh && (cd houston-ai && swift build -c release) && ./scripts/copy-houston-vm.sh && ./scripts/download-llama-cpp.sh && electron-builder --mac --arm64"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.74.0",
+    "@modelcontextprotocol/sdk": "^1.26.0",
+    "adm-zip": "^0.5.16",
+    "archiver": "^7.0.1",
+    "archiver-utils": "^5.0.2",
+    "chrome-devtools-mcp": "^0.17.1",
+    "express": "^4.21.0",
+    "marked": "^17.0.2",
+    "plist": "^3.1.0",
+    "sharp": "^0.34.5",
+    "ssh2": "^1.17.0",
+    "strip-ansi": "^7.1.2",
+    "vue": "^3.4.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/ssh2": "^1.15.5",
+    "@vitejs/plugin-vue": "^5.0.0",
+    "electron": "^28.0.0",
+    "electron-builder": "^25.0.0",
+    "electron-vite": "^2.0.0",
+    "typescript": "^5.6.0",
+    "vite": "^5.0.0",
+    "vue-tsc": "^2.0.0"
+  }
+}

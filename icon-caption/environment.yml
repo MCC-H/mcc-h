@@ -1,0 +1,13 @@
+name: icon-caption
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python>=3.10,<3.13
+  - pip
+  - pip:
+    - flask>=3.0
+    - torch>=2.0
+    - "transformers>=4.46,<4.53"
+    - pillow>=10.0
+    - huggingface_hub>=0.20
