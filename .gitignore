@@ -30,3 +30,5 @@ mcp-remote-desktop/dist
 mcp-remote-desktop/node_modules
 icon-caption/__pycache__
 icon-caption/weights
+.DS_Store
+houston/.DS_Store

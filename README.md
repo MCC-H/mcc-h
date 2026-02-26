@@ -1,5 +1,9 @@
 # Houston
 
+<p align="center">
+  <img src="mcc-h-logo.png" alt="Houston logo" width="200">
+</p>
+
 **Let AI work like a human.**
 
 **Pre-alpha** — A universal GUI-only AI agent that controls virtual machines and desktops like a human: screenshots, mouse, keyboard, SSH. Capable of any actions, including OS installs, app configuration, and full desktop automation.
