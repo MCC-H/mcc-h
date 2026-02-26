@@ -1,7 +1,7 @@
 /**
  * After electron-builder signs the app, sign bundled binaries with Developer ID.
  * HoustonVM must have com.apple.security.virtualization to use Apple's Virtualization framework.
- * HoustonAI and llama-server also need signing for distribution.
+ * (Kept for reference; virtualization is now in build/entitlements.mac.plist via entitlementsInherit.)
  */
 const { execFileSync } = require("child_process");
 const path = require("path");
@@ -26,7 +26,6 @@ module.exports = async function (context) {
   const resourcesDir = context.packager.getMacOsResourcesDir(context.appOutDir);
   const projectDir = context.packager.projectDir;
 
-  // HoustonVM: needs virtualization entitlement
   const houstonVmPath = path.join(resourcesDir, "HoustonVM");
   const houstonVmEntitlements = path.join(projectDir, "houston-vm", "HoustonVM.entitlements");
   if (fs.existsSync(houstonVmPath)) {
@@ -35,7 +34,6 @@ module.exports = async function (context) {
     console.log("[afterSign] HoustonVM signed");
   }
 
-  // HoustonAI
   const houstonAiPath = path.join(resourcesDir, "HoustonAI");
   if (fs.existsSync(houstonAiPath)) {
     console.log("[afterSign] Signing HoustonAI...");
@@ -43,7 +41,6 @@ module.exports = async function (context) {
     console.log("[afterSign] HoustonAI signed");
   }
 
-  // llama-server (inside llama-b8149)
   const llamaDir = path.join(resourcesDir, "llama-b8149");
   const llamaServerPath = path.join(llamaDir, "llama-server");
   if (fs.existsSync(llamaServerPath)) {
