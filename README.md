@@ -6,6 +6,13 @@
 
 **Let AI work like a human.**
 
+<p align="center">
+  <img src="screenshots/1.png" alt="MCC-H launchpad and VM configuration" width="600"><br>
+  <img src="screenshots/2.png" alt="MCC-H interface" width="600"><br>
+  <img src="screenshots/3.png" alt="MCC-H in action" width="600"><br>
+  <img src="screenshots/4.png" alt="MCC-H workflow" width="600">
+</p>
+
 **Pre-alpha** — A universal GUI-only AI agent that controls virtual machines and desktops like a human: screenshots, mouse, keyboard, SSH. Capable of any actions, including OS installs, app configuration, and full desktop automation.
 
 > **Warning:** This is pre-alpha software. The agent can perform any action you request. Use with caution and supervise sensitive operations.
