@@ -1,5 +1,5 @@
 /**
- * Icon Classification model (Qwen3-VL-2B-Instruct-GGUF-F16) manager.
+ * Icon Classification model (Qwen3-VL-2B-Instruct-GGUF-Q4) manager.
  * Bundles llama-server in app resources; models in ~/houston/models.
  */
 import { app } from "electron";
@@ -26,8 +26,8 @@ const MODELS_DIR = join(HOUSTON_DIR, "models");
 const CONFIG_PATH = join(HOUSTON_DIR, "icon-caption.json");
 
 const HF_BASE = "https://huggingface.co/Qwen/Qwen3-VL-2B-Instruct-GGUF/resolve/main";
-const MODEL_MAIN = "Qwen3VL-2B-Instruct-F16.gguf";
-const MODEL_MMPROJ = "mmproj-Qwen3VL-2B-Instruct-F16.gguf";
+const MODEL_MAIN = "Qwen3VL-2B-Instruct-Q4_K_M.gguf";
+const MODEL_MMPROJ = "mmproj-Qwen3VL-2B-Instruct-Q8_0.gguf";
 export interface IconModelProgress {
   phase: string;
   fractionCompleted?: number;

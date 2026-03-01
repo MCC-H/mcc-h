@@ -12,7 +12,7 @@ import { startSession, sendToSession, closeSession } from "./remote.js";
 import { runOCR, parseOcrToOverlay } from "./ocr.js";
 import { localizeElement, primeHoloCache, getCachedHoloImage } from "./localization.js";
 import type { McpServerConfig, AskUserPopupInfo } from "./config.js";
-import { screenshotVm, typeVm, pressVm, clickVm, moveVm, moveVmDragging, mouseDownVm, mouseUpVm, scrollVm, startVm, stopVm, setOverlayVm } from "../vm-manager.js";
+import { screenshotVm, typeVm, pressVm, clickVm, moveVm, moveVmDragging, mouseDownVm, mouseUpVm, scrollVm, startVm, stopVm, setOverlayVm, VM_POWERED_OFF_MSG } from "../vm-manager.js";
 import { waitForUserReply } from "../ask-user-bridge.js";
 import {
   secretsList,
@@ -167,6 +167,11 @@ function getLocalScreenshotPath(): string {
 /** Mutex to serialize screenshot requests; prevents concurrent HoustonVM /screenshot/ calls. */
 let screenshotMutex = Promise.resolve<void>(undefined);
 
+function isVmPoweredOffError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return msg.includes("powered off") || msg.includes("not running");
+}
+
 function createMcpServer(config: McpServerConfig) {
   async function takeScreenshotImpl(): Promise<{ localPath: string; base64: string }> {
     if (!config.vmId) {
@@ -221,7 +226,14 @@ function createMcpServer(config: McpServerConfig) {
     const s = a?.wait_seconds;
     const waitSec = Math.min(typeof s === "number" ? s : 1, MAX_WAIT_SECONDS);
     if (waitSec > 0) await new Promise((r) => setTimeout(r, waitSec * 1000));
-    const { localPath } = await takeScreenshotImpl();
+    let localPath: string;
+    try {
+      const shot = await takeScreenshotImpl();
+      localPath = shot.localPath;
+    } catch (err) {
+      if (isVmPoweredOffError(err)) return toolResult(VM_POWERED_OFF_MSG);
+      throw err;
+    }
     lastScreenshotBase64 = readFileSync(localPath).toString("base64");
     if (config.localizationApiUrl) {
       primeHoloCache(localPath, { baseUrl: config.localizationApiUrl });
@@ -279,7 +291,17 @@ function createMcpServer(config: McpServerConfig) {
       console.log("[Houston MCP] Tool take_snapshot called", config.vmId ? `(VM ${config.vmId})` : "(no VM)", "fresh_view:", freshView);
       logClarification("take_snapshot", args);
       logAssessment("take_snapshot", args);
-      const { localPath } = await takeScreenshotImpl();
+      let localPath: string;
+      try {
+        const shot = await takeScreenshotImpl();
+        localPath = shot.localPath;
+      } catch (err) {
+        if (isVmPoweredOffError(err)) {
+          recipeStore.appendToolCall("take_snapshot", args, VM_POWERED_OFF_MSG);
+          return toolResult(VM_POWERED_OFF_MSG);
+        }
+        throw err;
+      }
       lastScreenshotBase64 = readFileSync(localPath).toString("base64");
       if (config.localizationApiUrl) {
         primeHoloCache(localPath, { baseUrl: config.localizationApiUrl });
@@ -346,7 +368,17 @@ function createMcpServer(config: McpServerConfig) {
       const a = args as Record<string, unknown> | undefined;
       const waitSec = Math.min(typeof a?.wait_seconds === "number" ? a.wait_seconds : 10, MAX_WAIT_SECONDS);
       if (waitSec > 0) await new Promise((res) => setTimeout(res, waitSec * 1000));
-      const { localPath } = await takeScreenshotImpl();
+      let localPath: string;
+      try {
+        const shot = await takeScreenshotImpl();
+        localPath = shot.localPath;
+      } catch (err) {
+        if (isVmPoweredOffError(err)) {
+          recipeStore.appendToolCall("power_on", args, VM_POWERED_OFF_MSG);
+          return toolResult(VM_POWERED_OFF_MSG);
+        }
+        throw err;
+      }
       lastScreenshotBase64 = readFileSync(localPath).toString("base64");
       const ocrText = await timed("ocr", () => runOCR(config, localPath, { freshView: true }));
       const overlay = parseOcrToOverlay(ocrText);
@@ -496,7 +528,18 @@ function createMcpServer(config: McpServerConfig) {
       let clickY = y;
       if (element && (clickX == null || clickY == null) && config.localizationApiUrl) {
         const hasCache = !!getCachedHoloImage();
-        const localPath = hasCache ? null : (await takeScreenshotImpl()).localPath;
+        let localPath: string | null = null;
+        if (!hasCache) {
+          try {
+            localPath = (await takeScreenshotImpl()).localPath;
+          } catch (err) {
+            if (isVmPoweredOffError(err)) {
+              recipeStore.appendToolCall("mouse_click", args, VM_POWERED_OFF_MSG);
+              return toolResult(VM_POWERED_OFF_MSG);
+            }
+            throw err;
+          }
+        }
         const coords = await timed("localize", () =>
           localizeElement(localPath, element, { baseUrl: config.localizationApiUrl! })
         );
@@ -577,7 +620,18 @@ function createMcpServer(config: McpServerConfig) {
       let clickY = y;
       if (element && (clickX == null || clickY == null) && config.localizationApiUrl) {
         const hasCache = !!getCachedHoloImage();
-        const localPath = hasCache ? null : (await takeScreenshotImpl()).localPath;
+        let localPath: string | null = null;
+        if (!hasCache) {
+          try {
+            localPath = (await takeScreenshotImpl()).localPath;
+          } catch (err) {
+            if (isVmPoweredOffError(err)) {
+              recipeStore.appendToolCall("mouse_double_click", args, VM_POWERED_OFF_MSG);
+              return toolResult(VM_POWERED_OFF_MSG);
+            }
+            throw err;
+          }
+        }
         const coords = await timed("localize", () =>
           localizeElement(localPath, element, { baseUrl: config.localizationApiUrl! })
         );
@@ -663,7 +717,18 @@ function createMcpServer(config: McpServerConfig) {
       let targetY = y;
       if (element && (targetX == null || targetY == null) && config.localizationApiUrl) {
         const hasCache = !!getCachedHoloImage();
-        const localPath = hasCache ? null : (await takeScreenshotImpl()).localPath;
+        let localPath: string | null = null;
+        if (!hasCache) {
+          try {
+            localPath = (await takeScreenshotImpl()).localPath;
+          } catch (err) {
+            if (isVmPoweredOffError(err)) {
+              recipeStore.appendToolCall("mouse_scroll", args, VM_POWERED_OFF_MSG);
+              return toolResult(VM_POWERED_OFF_MSG);
+            }
+            throw err;
+          }
+        }
         const coords = await timed("localize", () =>
           localizeElement(localPath, element, { baseUrl: config.localizationApiUrl! })
         );
@@ -769,7 +834,18 @@ function createMcpServer(config: McpServerConfig) {
       let dstY = toY;
       if (config.localizationApiUrl) {
         const hasCache = !!getCachedHoloImage();
-        const localPath = hasCache ? null : (await takeScreenshotImpl()).localPath;
+        let localPath: string | null = null;
+        if (!hasCache) {
+          try {
+            localPath = (await takeScreenshotImpl()).localPath;
+          } catch (err) {
+            if (isVmPoweredOffError(err)) {
+              recipeStore.appendToolCall("drag_n_drop", args, VM_POWERED_OFF_MSG);
+              return toolResult(VM_POWERED_OFF_MSG);
+            }
+            throw err;
+          }
+        }
         if ((srcX == null || srcY == null) && fromElement) {
           const coords = await timed("localize", () =>
             localizeElement(localPath, fromElement, { baseUrl: config.localizationApiUrl! })

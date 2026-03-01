@@ -339,6 +339,22 @@ export async function showConsoleVm(vmId: string): Promise<{ ok: boolean; error?
   }
 }
 
+export const VM_POWERED_OFF_MSG = "VM is powered off. Use power_on to start it.";
+
+function normalizeScreenshotError(err: unknown): string {
+  const msg = err instanceof Error ? err.message : String(err);
+  try {
+    const parsed = JSON.parse(msg) as { error?: string };
+    if (parsed?.error?.toLowerCase().includes("not running")) {
+      return VM_POWERED_OFF_MSG;
+    }
+    return parsed.error ?? msg;
+  } catch {
+    if (msg.toLowerCase().includes("not running")) return VM_POWERED_OFF_MSG;
+    return msg;
+  }
+}
+
 export async function screenshotVm(vmId: string): Promise<{ ok: boolean; pngBase64?: string; error?: string }> {
   try {
     const buf = await requestBinary("/screenshot/" + vmId);
@@ -346,7 +362,7 @@ export async function screenshotVm(vmId: string): Promise<{ ok: boolean; pngBase
   } catch (err) {
     return {
       ok: false,
-      error: err instanceof Error ? err.message : String(err),
+      error: normalizeScreenshotError(err),
     };
   }
 }

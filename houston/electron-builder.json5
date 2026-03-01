@@ -26,6 +26,18 @@
       from: "dist-electron/resources/llama-b8149",
       to: "llama-b8149",
     },
+    {
+      from: "dist-electron/resources/CheckboxDetector.mlpackage",
+      to: "CheckboxDetector.mlpackage",
+    },
+    {
+      from: "dist-electron/resources/OmniParserDetector.mlpackage",
+      to: "OmniParserDetector.mlpackage",
+    },
+    {
+      from: "dist-electron/resources/UIElementsDetector.mlpackage",
+      to: "UIElementsDetector.mlpackage",
+    },
   ],
   mac: {
     target: [{ target: "dmg", arch: ["arm64"] }],
