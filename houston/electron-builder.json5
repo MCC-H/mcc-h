@@ -7,7 +7,7 @@
   directories: {
     output: "release/${version}",
   },
-  files: ["dist", "dist-electron"],
+  files: ["dist", "dist-electron", "SYSTEM_PROMPT.md"],
   asarUnpack: [
     "**/node_modules/archiver/**",
     "**/node_modules/archiver-utils/**",
